@@ -58,7 +58,7 @@ model:
       params:
         embed_dim: 8
         n_embed: 512
-        ckpt_path: ckpt/vae_epoch-120.pth
+        ckpt_path: /root/data/text2shape/diffusion-sdf/ckpt/vae_epoch-120.pth
         ddconfig:
           double_z: true
           z_channels: 8

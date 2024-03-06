@@ -1,5 +1,7 @@
 import argparse
 import os
+# os.environ["CUDA_DEVICE_ORDER"] = "PCU_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "4,5"
 
 import torch
 from omegaconf import OmegaConf
@@ -19,13 +21,23 @@ if __name__ == "__main__":
         type=str,
         nargs="?",
         help="dir to write results to",
-        default="outputs/txt2sdf-samples"
+        default="/root/data/text2shape/diffusion-sdf/outputs/txt2sdf-samples"
     )
     parser.add_argument(
         "--ddim_steps",
         type=int,
         default=50,
         help="number of ddim sampling steps",
+    )
+    parser.add_argument(
+        "--save_img", 
+        action="store_true", 
+        help="if saving the rendered images"
+    )
+    parser.add_argument(
+        "--save_gif", 
+        action="store_true", 
+        help="if saving the gif file of rendered images"
     )
     parser.add_argument(
         "--save_obj",
@@ -72,18 +84,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_path",
         type=str,
-        default="ckpt/voxdiff-uinu.ckpt",
+        default="/root/data/text2shape/diffusion-sdf/ckpt/voxdiff-uinu.ckpt",
         help="model path"
     )
 
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     opt = parser.parse_args()
 
     config = OmegaConf.load(opt.config_path)
     model = instantiate_from_config(config.model)
 
     model.load_state_dict(torch.load(opt.model_path)["state_dict"], strict=False)
-
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = model.to(device)
 
     dist, elev, azim = 1.7, 20, 20
@@ -121,8 +132,15 @@ if __name__ == "__main__":
     tar_dir = os.path.join(sample_path, f'{prompt.replace(" ", "-")}')
     os.makedirs(tar_dir, exist_ok=True)
     gen_mesh = sdf_to_mesh(x_samples_ddim)
-    gen_gif_name = os.path.join(tar_dir, f'{os.path.basename(opt.model_path)}.gif')
-    save_mesh_as_gif(mesh_renderer, gen_mesh, nrow=3, out_name=gen_gif_name)
+
+    if opt.save_img:
+        # TODO: Save rendered image files
+        # TODO: Save as paired text-image files (view_{n}/{model_id}.png & text_files/{model_id}.txt)
+        pass
+        # save_mesh_as_img(mesh_renderer, gen_mesh)
+    if opt.save_gif:
+        gen_gif_name = os.path.join(tar_dir, f'{os.path.basename(opt.model_path)}.gif')
+        save_mesh_as_gif(mesh_renderer, gen_mesh, nrow=3, out_name=gen_gif_name)
     if opt.save_obj:
         for k, mesh in enumerate(gen_mesh):
             mesh_name = os.path.join(tar_dir,
